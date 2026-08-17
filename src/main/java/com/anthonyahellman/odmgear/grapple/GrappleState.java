@@ -57,8 +57,12 @@ public final class GrappleState {
         boolean right = state.getBoolean("right_active");
         Vec3 velocity = applyMomentumGrace(player, state, player.getDeltaMovement());
         if (!left && !right) {
-            player.setDeltaMovement(velocity);
-            player.hurtMarked = true;
+            boolean momentumAssistActive = state.getInt("release_grace") > 0
+                    || state.getInt("slide_ticks") > 0;
+            if (momentumAssistActive) {
+                player.setDeltaMovement(velocity);
+                player.hurtMarked = true;
+            }
             return;
         }
 
