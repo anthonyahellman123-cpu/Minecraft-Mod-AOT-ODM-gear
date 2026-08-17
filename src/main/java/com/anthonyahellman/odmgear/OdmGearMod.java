@@ -1,6 +1,7 @@
 package com.anthonyahellman.odmgear;
 
 import com.anthonyahellman.odmgear.registry.ModItems;
+import com.anthonyahellman.odmgear.network.ModNetwork;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -17,6 +18,7 @@ public final class OdmGearMod {
     public OdmGearMod(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();
         ModItems.register(modEventBus);
+        ModNetwork.initialize();
         modEventBus.addListener(this::addCreativeTabContents);
 
         LOGGER.info("ODM Gear is loading");

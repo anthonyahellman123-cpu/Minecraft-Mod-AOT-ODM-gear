@@ -1,3 +1,7 @@
 {
-  "item.odmgear.odm_harness": "ODM Harness"
+  "item.odmgear.odm_harness": "ODM Harness",
+  "key.categories.odmgear": "ODM Gear",
+  "key.odmgear.left_grapple": "Toggle Left Grapple",
+  "key.odmgear.right_grapple": "Toggle Right Grapple",
+  "key.odmgear.gas_boost": "Gas Boost"
 }
