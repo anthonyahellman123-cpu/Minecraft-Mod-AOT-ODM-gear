@@ -12,7 +12,7 @@ A Forge 1.20.1 Minecraft mod focused on polished, momentum-driven ODM movement a
 
 ## Current status
 
-The Forge project skeleton is established. Movement, gas, grappling, lock-on, and weapons are not implemented yet.
+The Forge project skeleton is established. The first editable Blockbench source for the wearable ODM harness and its 64×64 texture are in `model_sources/`. Movement, gas, grappling, lock-on, and weapons are not implemented yet.
 
 ## Development
 

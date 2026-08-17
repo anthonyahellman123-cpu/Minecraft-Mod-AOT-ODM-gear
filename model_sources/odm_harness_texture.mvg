@@ -1,0 +1,16 @@
+viewbox 0 0 64 64
+fill '#171a1d' rectangle 0,0 63,63
+fill '#4b5156' rectangle 0,0 39,22
+fill '#737b80' rectangle 2,2 37,4
+fill '#30363a' rectangle 0,12 35,21
+fill '#667178' rectangle 0,24 37,35
+fill '#9da9ad' rectangle 2,25 16,26 rectangle 21,25 35,26
+fill '#555d62' rectangle 0,38 30,43
+fill '#242a2e' rectangle 40,0 63,28
+fill '#798287' rectangle 41,1 62,2
+fill '#9a742f' rectangle 48,30 58,35
+fill '#202427' rectangle 40,38 63,44
+fill '#b48934' rectangle 52,38 63,41
+fill '#22272a' rectangle 0,46 63,63
+fill '#3d4549' rectangle 2,48 61,49
+fill '#774329' rectangle 4,53 11,60 rectangle 52,53 59,60
