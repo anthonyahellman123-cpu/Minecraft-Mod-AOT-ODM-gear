@@ -5,6 +5,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
+import net.minecraft.world.phys.Vec3;
 
 public final class ModNetwork {
     private static final String PROTOCOL_VERSION = "1";
@@ -28,6 +29,10 @@ public final class ModNetwork {
     }
 
     public static void sendInput(GrappleInputPacket.Action action) {
-        CHANNEL.sendToServer(new GrappleInputPacket(action));
+        CHANNEL.sendToServer(new GrappleInputPacket(action, null));
+    }
+
+    public static void sendGrapple(GrappleInputPacket.Action action, Vec3 target) {
+        CHANNEL.sendToServer(new GrappleInputPacket(action, target));
     }
 }

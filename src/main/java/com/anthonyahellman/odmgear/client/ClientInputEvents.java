@@ -22,6 +22,8 @@ public final class ClientInputEvents {
             "key.odmgear.gas_boost", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, CATEGORY);
     private static final KeyMapping AUTO_DETACH = new KeyMapping(
             "key.odmgear.auto_detach", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, CATEGORY);
+    private static final KeyMapping AUTO_AIM = new KeyMapping(
+            "key.odmgear.auto_aim", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_C, CATEGORY);
     private static boolean boostWasDown;
 
     private ClientInputEvents() {
@@ -39,6 +41,7 @@ public final class ClientInputEvents {
             event.register(RIGHT_GRAPPLE);
             event.register(GAS_BOOST);
             event.register(AUTO_DETACH);
+            event.register(AUTO_AIM);
         }
     }
 
@@ -55,17 +58,22 @@ public final class ClientInputEvents {
             }
 
             while (LEFT_GRAPPLE.consumeClick()) {
-                ClientGrappleState.toggleLeft();
-                ModNetwork.sendInput(GrappleInputPacket.Action.TOGGLE_LEFT);
+                ModNetwork.sendGrapple(GrappleInputPacket.Action.TOGGLE_LEFT,
+                        ClientGrappleState.toggleLeft());
             }
             while (RIGHT_GRAPPLE.consumeClick()) {
-                ClientGrappleState.toggleRight();
-                ModNetwork.sendInput(GrappleInputPacket.Action.TOGGLE_RIGHT);
+                ModNetwork.sendGrapple(GrappleInputPacket.Action.TOGGLE_RIGHT,
+                        ClientGrappleState.toggleRight());
             }
             while (AUTO_DETACH.consumeClick()) {
                 ClientGrappleState.toggleAutoDetach();
                 ModNetwork.sendInput(GrappleInputPacket.Action.TOGGLE_AUTO_DETACH);
             }
+            while (AUTO_AIM.consumeClick()) {
+                ClientGrappleState.toggleAutoAim();
+            }
+
+            ClientGrappleState.tick();
 
             boolean boostDown = GAS_BOOST.isDown();
             if (boostDown != boostWasDown) {

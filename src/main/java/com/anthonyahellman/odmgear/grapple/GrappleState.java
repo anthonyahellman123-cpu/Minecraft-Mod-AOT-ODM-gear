@@ -30,7 +30,7 @@ public final class GrappleState {
         return player.getItemBySlot(EquipmentSlot.CHEST).is(ModItems.ODM_HARNESS.get());
     }
 
-    public static void handleInput(ServerPlayer player, GrappleInputPacket.Action action) {
+    public static void handleInput(ServerPlayer player, GrappleInputPacket.Action action, Vec3 requestedTarget) {
         CompoundTag state = getState(player);
         if (!hasHarness(player)) {
             clear(state);
@@ -38,8 +38,8 @@ public final class GrappleState {
         }
 
         switch (action) {
-            case TOGGLE_LEFT -> toggleCable(player, state, "left");
-            case TOGGLE_RIGHT -> toggleCable(player, state, "right");
+            case TOGGLE_LEFT -> toggleCable(player, state, "left", requestedTarget);
+            case TOGGLE_RIGHT -> toggleCable(player, state, "right", requestedTarget);
             case TOGGLE_AUTO_DETACH -> toggleAutoDetach(player, state);
             case BOOST_ON -> state.putBoolean("boost", true);
             case BOOST_OFF -> state.putBoolean("boost", false);
@@ -55,14 +55,16 @@ public final class GrappleState {
 
         boolean left = state.getBoolean("left_active");
         boolean right = state.getBoolean("right_active");
+        Vec3 velocity = applyMomentumGrace(player, state, player.getDeltaMovement());
         if (!left && !right) {
+            player.setDeltaMovement(velocity);
+            player.hurtMarked = true;
             return;
         }
 
         boolean boost = state.getBoolean("boost");
         boolean autoDetach = isAutoDetachEnabled(state);
         double reelSpeed = boost ? BOOST_REEL_SPEED : NORMAL_REEL_SPEED;
-        Vec3 velocity = player.getDeltaMovement();
         if (left) {
             velocity = tickCable(player, state, "left", velocity, reelSpeed, autoDetach);
         }
@@ -96,6 +98,7 @@ public final class GrappleState {
         double distance = player.position().distanceTo(anchor);
         if (autoDetach && distance <= AUTO_DETACH_DISTANCE) {
             state.putBoolean(side + "_active", false);
+            state.putInt("release_grace", 12);
             return velocity;
         }
 
@@ -104,15 +107,18 @@ public final class GrappleState {
         return applyCableForce(player.position(), velocity, anchor, ropeLength);
     }
 
-    private static void toggleCable(ServerPlayer player, CompoundTag state, String side) {
+    private static void toggleCable(ServerPlayer player, CompoundTag state, String side, Vec3 requestedTarget) {
         String activeKey = side + "_active";
         if (state.getBoolean(activeKey)) {
             state.putBoolean(activeKey, false);
+            state.putInt("release_grace", 12);
             return;
         }
 
         Vec3 start = player.getEyePosition();
-        Vec3 end = start.add(player.getLookAngle().scale(RANGE));
+        Vec3 end = requestedTarget != null && start.distanceTo(requestedTarget) <= RANGE
+                ? requestedTarget.add(requestedTarget.subtract(start).normalize().scale(0.35D))
+                : start.add(player.getLookAngle().scale(RANGE));
         BlockHitResult hit = player.level().clip(new ClipContext(
                 start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
         if (hit.getType() != HitResult.Type.BLOCK) {
@@ -152,6 +158,41 @@ public final class GrappleState {
             result = result.add(direction.scale(-radialVelocity * 0.48D));
         }
         return result;
+    }
+
+    private static Vec3 applyMomentumGrace(ServerPlayer player, CompoundTag state, Vec3 velocity) {
+        boolean grounded = player.onGround();
+        boolean wasGrounded = state.getBoolean("was_grounded");
+
+        if (!grounded) {
+            state.putDouble("last_air_x", velocity.x);
+            state.putDouble("last_air_z", velocity.z);
+        } else if (!wasGrounded) {
+            double storedX = state.getDouble("last_air_x");
+            double storedZ = state.getDouble("last_air_z");
+            double storedSpeed = Math.sqrt(storedX * storedX + storedZ * storedZ);
+            if (storedSpeed > 0.42D) {
+                velocity = new Vec3(storedX * 0.90D, 0.075D, storedZ * 0.90D);
+                state.putInt("slide_ticks", 16);
+            }
+        }
+
+        int slideTicks = state.getInt("slide_ticks");
+        if (grounded && slideTicks > 0) {
+            velocity = new Vec3(velocity.x * 0.975D, Math.max(velocity.y, 0.045D), velocity.z * 0.975D);
+            state.putInt("slide_ticks", slideTicks - 1);
+            player.fallDistance = 0.0F;
+        }
+
+        int graceTicks = state.getInt("release_grace");
+        if (!grounded && graceTicks > 0) {
+            velocity = velocity.add(0.0D, 0.045D, 0.0D);
+            state.putInt("release_grace", graceTicks - 1);
+            player.fallDistance = Math.min(player.fallDistance, 2.0F);
+        }
+
+        state.putBoolean("was_grounded", grounded);
+        return velocity;
     }
 
     private static CompoundTag getState(ServerPlayer player) {
