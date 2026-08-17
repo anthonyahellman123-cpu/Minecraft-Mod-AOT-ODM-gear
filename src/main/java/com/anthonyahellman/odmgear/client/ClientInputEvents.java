@@ -20,6 +20,8 @@ public final class ClientInputEvents {
             "key.odmgear.right_grapple", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_X, CATEGORY);
     private static final KeyMapping GAS_BOOST = new KeyMapping(
             "key.odmgear.gas_boost", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, CATEGORY);
+    private static final KeyMapping AUTO_DETACH = new KeyMapping(
+            "key.odmgear.auto_detach", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, CATEGORY);
     private static boolean boostWasDown;
 
     private ClientInputEvents() {
@@ -36,6 +38,7 @@ public final class ClientInputEvents {
             event.register(LEFT_GRAPPLE);
             event.register(RIGHT_GRAPPLE);
             event.register(GAS_BOOST);
+            event.register(AUTO_DETACH);
         }
     }
 
@@ -58,6 +61,10 @@ public final class ClientInputEvents {
             while (RIGHT_GRAPPLE.consumeClick()) {
                 ClientGrappleState.toggleRight();
                 ModNetwork.sendInput(GrappleInputPacket.Action.TOGGLE_RIGHT);
+            }
+            while (AUTO_DETACH.consumeClick()) {
+                ClientGrappleState.toggleAutoDetach();
+                ModNetwork.sendInput(GrappleInputPacket.Action.TOGGLE_AUTO_DETACH);
             }
 
             boolean boostDown = GAS_BOOST.isDown();

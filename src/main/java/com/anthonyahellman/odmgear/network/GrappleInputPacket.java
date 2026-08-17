@@ -11,6 +11,7 @@ public record GrappleInputPacket(Action action) {
     public enum Action {
         TOGGLE_LEFT,
         TOGGLE_RIGHT,
+        TOGGLE_AUTO_DETACH,
         BOOST_ON,
         BOOST_OFF
     }

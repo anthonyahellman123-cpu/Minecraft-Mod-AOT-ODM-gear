@@ -26,6 +26,7 @@ public final class ClientGrappleState {
     private static final double RANGE = 64.0D;
     private static Vec3 leftAnchor;
     private static Vec3 rightAnchor;
+    private static boolean autoDetach = true;
 
     private ClientGrappleState() {
     }
@@ -36,6 +37,10 @@ public final class ClientGrappleState {
 
     public static void toggleRight() {
         rightAnchor = rightAnchor == null ? findAnchor() : null;
+    }
+
+    public static void toggleAutoDetach() {
+        autoDetach = !autoDetach;
     }
 
     private static Vec3 findAnchor() {
@@ -67,6 +72,17 @@ public final class ClientGrappleState {
 
         float partialTick = event.getPartialTick();
         Vec3 playerPosition = player.getPosition(partialTick).add(0.0D, player.getBbHeight() * 0.62D, 0.0D);
+        if (autoDetach) {
+            if (leftAnchor != null && playerPosition.distanceTo(leftAnchor) <= 2.75D) {
+                leftAnchor = null;
+            }
+            if (rightAnchor != null && playerPosition.distanceTo(rightAnchor) <= 2.75D) {
+                rightAnchor = null;
+            }
+        }
+        if (leftAnchor == null && rightAnchor == null) {
+            return;
+        }
         Vec3 side = player.getLookAngle().cross(new Vec3(0.0D, 1.0D, 0.0D)).normalize().scale(0.28D);
 
         Camera camera = event.getCamera();
