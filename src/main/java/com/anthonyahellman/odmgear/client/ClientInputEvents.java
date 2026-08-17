@@ -52,9 +52,11 @@ public final class ClientInputEvents {
             }
 
             while (LEFT_GRAPPLE.consumeClick()) {
+                ClientGrappleState.toggleLeft();
                 ModNetwork.sendInput(GrappleInputPacket.Action.TOGGLE_LEFT);
             }
             while (RIGHT_GRAPPLE.consumeClick()) {
+                ClientGrappleState.toggleRight();
                 ModNetwork.sendInput(GrappleInputPacket.Action.TOGGLE_RIGHT);
             }
 
