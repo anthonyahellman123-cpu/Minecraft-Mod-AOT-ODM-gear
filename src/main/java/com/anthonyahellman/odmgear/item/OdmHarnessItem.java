@@ -29,6 +29,7 @@ public final class OdmHarnessItem extends ArmorItem {
             private OdmHarnessModel model;
 
             @Override
+            @SuppressWarnings("unchecked")
             public HumanoidModel<?> getHumanoidArmorModel(LivingEntity entity, ItemStack stack,
                                                            EquipmentSlot slot, HumanoidModel<?> original) {
                 if (model == null) {
@@ -36,7 +37,7 @@ public final class OdmHarnessItem extends ArmorItem {
                             .bakeLayer(OdmHarnessModel.LAYER_LOCATION));
                 }
 
-                original.copyPropertiesTo(model);
+                ((HumanoidModel<LivingEntity>) original).copyPropertiesTo(model);
                 model.setAllVisible(false);
                 model.body.visible = true;
                 return model;
