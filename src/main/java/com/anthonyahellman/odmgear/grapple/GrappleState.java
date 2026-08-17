@@ -1,6 +1,7 @@
 package com.anthonyahellman.odmgear.grapple;
 
 import com.anthonyahellman.odmgear.network.GrappleInputPacket;
+import com.anthonyahellman.odmgear.network.MovementInputPacket;
 import com.anthonyahellman.odmgear.registry.ModItems;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
@@ -18,8 +19,7 @@ public final class GrappleState {
     private static final double MIN_ROPE_LENGTH = 4.0D;
     private static final double MAX_ACCELERATION = 0.30D;
     private static final double BOOST_ACCELERATION = 0.12D;
-    private static final double NORMAL_REEL_SPEED = 0.10D;
-    private static final double BOOST_REEL_SPEED = 0.34D;
+    private static final double BOOST_REEL_SPEED = 0.24D;
     private static final double AUTO_DETACH_DISTANCE = 2.75D;
     private static final double MAX_SPEED = 3.8D;
 
@@ -46,6 +46,16 @@ public final class GrappleState {
         }
     }
 
+    public static void setMovementInput(ServerPlayer player, MovementInputPacket input) {
+        CompoundTag state = getState(player);
+        state.putBoolean("input_forward", input.forward());
+        state.putBoolean("input_backward", input.backward());
+        state.putBoolean("input_left", input.left());
+        state.putBoolean("input_right", input.right());
+        state.putBoolean("input_up", input.up());
+        state.putBoolean("input_down", input.down());
+    }
+
     public static void tick(ServerPlayer player) {
         CompoundTag state = getState(player);
         if (!hasHarness(player)) {
@@ -55,11 +65,10 @@ public final class GrappleState {
 
         boolean left = state.getBoolean("left_active");
         boolean right = state.getBoolean("right_active");
-        Vec3 velocity = applyMomentumGrace(player, state, player.getDeltaMovement());
+        boolean hadReleaseGrace = state.getInt("release_grace") > 0;
+        Vec3 velocity = applyReleaseGrace(player, state, player.getDeltaMovement());
         if (!left && !right) {
-            boolean momentumAssistActive = state.getInt("release_grace") > 0
-                    || state.getInt("slide_ticks") > 0;
-            if (momentumAssistActive) {
+            if (hadReleaseGrace) {
                 player.setDeltaMovement(velocity);
                 player.hurtMarked = true;
             }
@@ -68,7 +77,7 @@ public final class GrappleState {
 
         boolean boost = state.getBoolean("boost");
         boolean autoDetach = isAutoDetachEnabled(state);
-        double reelSpeed = boost ? BOOST_REEL_SPEED : NORMAL_REEL_SPEED;
+        double reelSpeed = boost ? BOOST_REEL_SPEED : 0.0D;
         if (left) {
             velocity = tickCable(player, state, "left", velocity, reelSpeed, autoDetach);
         }
@@ -84,6 +93,15 @@ public final class GrappleState {
                 player.serverLevel().sendParticles(ParticleTypes.CLOUD,
                         exhaust.x, exhaust.y, exhaust.z, 2, 0.12D, 0.10D, 0.12D, 0.025D);
             }
+        }
+
+        velocity = applyDirectionalControl(player, state, velocity, boost);
+
+        if (!player.onGround()) {
+            velocity = velocity.add(0.0D, 0.052D, 0.0D);
+        } else if (velocity.horizontalDistance() > 0.22D) {
+            velocity = new Vec3(velocity.x * 0.995D, Math.max(velocity.y, 0.11D), velocity.z * 0.995D);
+            player.fallDistance = 0.0F;
         }
 
         double speed = velocity.length();
@@ -132,7 +150,7 @@ public final class GrappleState {
         Vec3 anchor = hit.getLocation();
         writeAnchor(state, side, anchor);
         state.putDouble(side + "_length", Math.max(MIN_ROPE_LENGTH,
-                player.position().distanceTo(anchor) * 0.90D));
+                player.position().distanceTo(anchor) * 0.98D));
         state.putBoolean(activeKey, true);
     }
 
@@ -164,38 +182,39 @@ public final class GrappleState {
         return result;
     }
 
-    private static Vec3 applyMomentumGrace(ServerPlayer player, CompoundTag state, Vec3 velocity) {
+    private static Vec3 applyReleaseGrace(ServerPlayer player, CompoundTag state, Vec3 velocity) {
         boolean grounded = player.onGround();
-        boolean wasGrounded = state.getBoolean("was_grounded");
-
-        if (!grounded) {
-            state.putDouble("last_air_x", velocity.x);
-            state.putDouble("last_air_z", velocity.z);
-        } else if (!wasGrounded) {
-            double storedX = state.getDouble("last_air_x");
-            double storedZ = state.getDouble("last_air_z");
-            double storedSpeed = Math.sqrt(storedX * storedX + storedZ * storedZ);
-            if (storedSpeed > 0.42D) {
-                velocity = new Vec3(storedX * 0.90D, 0.075D, storedZ * 0.90D);
-                state.putInt("slide_ticks", 16);
-            }
-        }
-
-        int slideTicks = state.getInt("slide_ticks");
-        if (grounded && slideTicks > 0) {
-            velocity = new Vec3(velocity.x * 0.975D, Math.max(velocity.y, 0.045D), velocity.z * 0.975D);
-            state.putInt("slide_ticks", slideTicks - 1);
-            player.fallDistance = 0.0F;
-        }
-
         int graceTicks = state.getInt("release_grace");
         if (!grounded && graceTicks > 0) {
-            velocity = velocity.add(0.0D, 0.045D, 0.0D);
+            velocity = velocity.add(0.0D, 0.035D, 0.0D);
             state.putInt("release_grace", graceTicks - 1);
             player.fallDistance = Math.min(player.fallDistance, 2.0F);
         }
+        return velocity;
+    }
 
-        state.putBoolean("was_grounded", grounded);
+    private static Vec3 applyDirectionalControl(ServerPlayer player, CompoundTag state,
+                                                Vec3 velocity, boolean boost) {
+        Vec3 look = player.getLookAngle();
+        Vec3 forward = new Vec3(look.x, 0.0D, look.z);
+        if (forward.lengthSqr() < 0.0001D) {
+            forward = new Vec3(0.0D, 0.0D, 1.0D);
+        } else {
+            forward = forward.normalize();
+        }
+        Vec3 right = new Vec3(-forward.z, 0.0D, forward.x);
+        Vec3 input = Vec3.ZERO;
+        if (state.getBoolean("input_forward")) input = input.add(forward);
+        if (state.getBoolean("input_backward")) input = input.subtract(forward);
+        if (state.getBoolean("input_left")) input = input.subtract(right);
+        if (state.getBoolean("input_right")) input = input.add(right);
+        if (state.getBoolean("input_up")) input = input.add(0.0D, 1.0D, 0.0D);
+        if (state.getBoolean("input_down")) input = input.add(0.0D, -1.0D, 0.0D);
+
+        if (input.lengthSqr() > 0.0001D) {
+            double acceleration = boost ? 0.085D : 0.038D;
+            velocity = velocity.add(input.normalize().scale(acceleration));
+        }
         return velocity;
     }
 

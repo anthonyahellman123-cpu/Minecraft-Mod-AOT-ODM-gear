@@ -48,6 +48,14 @@ public final class ClientGrappleState {
         return rightAnchor;
     }
 
+    public static boolean isLeftAttached() {
+        return leftAnchor != null;
+    }
+
+    public static boolean isRightAttached() {
+        return rightAnchor != null;
+    }
+
     public static void toggleAutoDetach() {
         autoDetach = !autoDetach;
     }

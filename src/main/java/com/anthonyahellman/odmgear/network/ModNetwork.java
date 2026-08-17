@@ -26,6 +26,11 @@ public final class ModNetwork {
                 .decoder(GrappleInputPacket::decode)
                 .consumerMainThread(GrappleInputPacket::handle)
                 .add();
+        CHANNEL.messageBuilder(MovementInputPacket.class, 1, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(MovementInputPacket::encode)
+                .decoder(MovementInputPacket::decode)
+                .consumerMainThread(MovementInputPacket::handle)
+                .add();
     }
 
     public static void sendInput(GrappleInputPacket.Action action) {
@@ -34,5 +39,9 @@ public final class ModNetwork {
 
     public static void sendGrapple(GrappleInputPacket.Action action, Vec3 target) {
         CHANNEL.sendToServer(new GrappleInputPacket(action, target));
+    }
+
+    public static void sendMovement(MovementInputPacket packet) {
+        CHANNEL.sendToServer(packet);
     }
 }

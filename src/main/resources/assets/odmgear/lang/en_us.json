@@ -5,5 +5,7 @@
   "key.odmgear.right_grapple": "Toggle Right Grapple",
   "key.odmgear.gas_boost": "Gas Boost",
   "key.odmgear.auto_detach": "Toggle Auto-Detach",
-  "key.odmgear.auto_aim": "Toggle Auto-Aim"
+  "key.odmgear.auto_aim": "Toggle Auto-Aim",
+  "key.odmgear.down": "ODM Downward Acceleration",
+  "key.odmgear.hook_mode": "Cycle Hook Input Mode"
 }
